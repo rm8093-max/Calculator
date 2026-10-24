@@ -1,100 +1,133 @@
 import streamlit as st
 
 import calculator as calc
+from app_theme import css_variables
 
-st.set_page_config(page_title="Calculator", page_icon="🧮", layout="centered")
+st.set_page_config(page_title="Scientific Calculator", page_icon="🧮", layout="wide")
 
 if "state" not in st.session_state:
     st.session_state.state = calc.State()
 
-# (label, handler) rows; the handler takes and returns a State.
+
+def digit(n):
+    return lambda s: calc.digit(s, n)
+
+
+def op(o):
+    return lambda s: calc.operator(s, o)
+
+
+def fn(name):
+    return lambda s: calc.unary(s, name)
+
+
+def const(name):
+    return lambda s: calc.constant(s, name)
+
+
+# (label, kind, handler). Each row is 4 scientific keys then 4 basic keys.
 ROWS = [
-    [("AC", calc.clear), ("+/−", calc.toggle_sign), ("%", calc.percent), ("÷", lambda s: calc.operator(s, "/"))],
-    [("7", lambda s: calc.digit(s, "7")), ("8", lambda s: calc.digit(s, "8")), ("9", lambda s: calc.digit(s, "9")), ("×", lambda s: calc.operator(s, "*"))],
-    [("4", lambda s: calc.digit(s, "4")), ("5", lambda s: calc.digit(s, "5")), ("6", lambda s: calc.digit(s, "6")), ("−", lambda s: calc.operator(s, "-"))],
-    [("1", lambda s: calc.digit(s, "1")), ("2", lambda s: calc.digit(s, "2")), ("3", lambda s: calc.digit(s, "3")), ("+", lambda s: calc.operator(s, "+"))],
-    [("0", lambda s: calc.digit(s, "0")), (".", calc.decimal), ("⌫", calc.backspace), ("=", calc.equals)],
+    [("π", "sci", const("pi")), ("e", "sci", const("e")), ("x!", "sci", fn("fact")), ("1/x", "sci", fn("inv")),
+     ("AC", "fn", calc.clear), ("⌫", "fn", calc.backspace), ("%", "fn", calc.percent), ("÷", "op", op("/"))],
+    [("sin", "sci", fn("sin")), ("cos", "sci", fn("cos")), ("tan", "sci", fn("tan")), ("√x", "sci", fn("sqrt")),
+     ("7", "num", digit("7")), ("8", "num", digit("8")), ("9", "num", digit("9")), ("×", "op", op("*"))],
+    [("sin⁻¹", "sci", fn("asin")), ("cos⁻¹", "sci", fn("acos")), ("tan⁻¹", "sci", fn("atan")), ("x²", "sci", fn("sq")),
+     ("4", "num", digit("4")), ("5", "num", digit("5")), ("6", "num", digit("6")), ("−", "op", op("-"))],
+    [("ln", "sci", fn("ln")), ("log", "sci", fn("log")), ("eˣ", "sci", fn("exp")), ("10ˣ", "sci", fn("tenpow")),
+     ("1", "num", digit("1")), ("2", "num", digit("2")), ("3", "num", digit("3")), ("+", "op", op("+"))],
+    [("xʸ", "sci", op("^")), ("x³", "sci", fn("cube")), ("∛x", "sci", fn("cbrt")), ("|x|", "sci", fn("abs")),
+     ("+/−", "fn", calc.toggle_sign), ("0", "num", digit("0")), (".", "num", calc.decimal), ("=", "eq", calc.equals)],
 ]
 
-
-STYLE = """
+STYLE = f"""
 <style>
-:root {
-  --dusk-blue: #485696;
-  --alabaster-grey: #e7e7e7;
-  --apricot-cream: #f9c784;
-  --pumpkin-spice: #fc7a1e;
-  --molten-orange: #f24c00;
-  --ink: #1d2240;
-}
-.calc-display {
+:root {{
+{css_variables()}
+}}
+h1, h2, h3, label, p, span {{ color: var(--ink); font-weight: 700; }}
+.calc-display {{
   background: var(--dusk-blue);
-  color: var(--alabaster-grey);
+  color: var(--white);
   border-radius: 16px;
   padding: 12px 20px;
   text-align: right;
   margin-bottom: 12px;
-}
-.calc-display .history { min-height: 1.4rem; color: var(--apricot-cream); }
-.calc-display .current {
-  font-size: 2.6rem;
-  font-weight: 600;
+}}
+.calc-display .meta {{
+  display: flex;
+  justify-content: space-between;
+  min-height: 1.5rem;
+  color: var(--white);
+  font-weight: 700;
+}}
+.calc-display .current {{
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--white);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-[class*="st-key-num-"] button,
-[class*="st-key-fn-"] button,
-[class*="st-key-op-"] button,
-[class*="st-key-eq-"] button {
-  height: 3.6rem;
-  font-size: 1.4rem;
-  font-weight: 600;
-  border: 0;
+}}
+.calc-display, .calc-display * {{ color: var(--white); }}
+[class*="st-key-num-"] button, [class*="st-key-sci-"] button,
+[class*="st-key-fn-"] button, [class*="st-key-op-"] button,
+[class*="st-key-eq-"] button {{
+  height: 3.4rem;
+  border: 2px solid var(--ink);
   border-radius: 14px;
-}
-[class*="st-key-num-"] button { background: var(--dusk-blue); color: var(--alabaster-grey); }
-[class*="st-key-fn-"] button { background: var(--apricot-cream); color: var(--ink); }
-[class*="st-key-op-"] button { background: var(--pumpkin-spice); color: var(--ink); }
-[class*="st-key-eq-"] button { background: var(--molten-orange); color: var(--ink); }
-[class*="st-key-"] button:hover { filter: brightness(1.12); }
-[class*="st-key-"] button:active { filter: brightness(0.9); }
+}}
+[class*="st-key-"] button {{ padding: 0 2px; }}
+[class*="st-key-"] button, [class*="st-key-"] button * {{
+  font-size: clamp(0.85rem, 1.7vw, 1.25rem) !important;
+  font-weight: 800 !important;
+  white-space: nowrap;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}}
+/* Streamlit restyles hover/focus/active, so every state is pinned to the same colors. */
+[class*="st-key-"] button *, [class*="st-key-"] button *:hover {{ background: transparent !important; }}
+[class*="st-key-num-"] button, [class*="st-key-num-"] button:hover, [class*="st-key-num-"] button:focus, [class*="st-key-num-"] button:active,
+[class*="st-key-num-"] button * {{ background-color: var(--alabaster-grey) !important; color: var(--ink) !important; }}
+[class*="st-key-sci-"] button, [class*="st-key-sci-"] button:hover, [class*="st-key-sci-"] button:focus, [class*="st-key-sci-"] button:active,
+[class*="st-key-sci-"] button * {{ background-color: var(--dusk-blue) !important; color: var(--white) !important; }}
+[class*="st-key-fn-"] button, [class*="st-key-fn-"] button:hover, [class*="st-key-fn-"] button:focus, [class*="st-key-fn-"] button:active,
+[class*="st-key-fn-"] button * {{ background-color: var(--apricot-cream) !important; color: var(--ink) !important; }}
+[class*="st-key-op-"] button, [class*="st-key-op-"] button:hover, [class*="st-key-op-"] button:focus, [class*="st-key-op-"] button:active,
+[class*="st-key-op-"] button * {{ background-color: var(--pumpkin-spice) !important; color: var(--ink) !important; }}
+[class*="st-key-eq-"] button, [class*="st-key-eq-"] button:hover, [class*="st-key-eq-"] button:focus, [class*="st-key-eq-"] button:active,
+[class*="st-key-eq-"] button * {{ background-color: var(--molten-orange) !important; color: var(--ink) !important; }}
+[class*="st-key-"] button:hover {{ filter: brightness(1.1); border-color: var(--ink) !important; }}
+[class*="st-key-"] button:active {{ filter: brightness(0.9); }}
+[class*="st-key-"] button:focus-visible {{ outline: 3px solid var(--ink); outline-offset: 2px; }}
 </style>
 """
 
-OPERATORS = set("÷×−+")
-
-
-def kind(label):
-    if label == "=":
-        return "eq"
-    if label in OPERATORS:
-        return "op"
-    if label.isdigit() or label == ".":
-        return "num"
-    return "fn"
-
 
 def press(handler):
-    st.session_state.state = handler(st.session_state.state)
+    state = st.session_state.state
+    state = calc.set_angle(state, st.session_state.angle_mode.lower())
+    st.session_state.state = handler(state)
 
 
 st.markdown(STYLE, unsafe_allow_html=True)
-
-state = st.session_state.state
-st.markdown(
-    f'<div class="calc-display"><div class="history">{calc.history(state) or "&nbsp;"}</div>'
-    f'<div class="current">{state.current}</div></div>',
-    unsafe_allow_html=True,
-)
-
-for r, row in enumerate(ROWS):
-    cols = st.columns(4)
-    for c, (label, handler) in enumerate(row):
-        cols[c].button(
-            label,
-            key=f"{kind(label)}-{r}-{c}",
-            on_click=press,
-            args=(handler,),
-            use_container_width=True,
-        )
+_, middle, _ = st.columns([1, 6, 1])
+with middle:
+    st.markdown("### Scientific Calculator")
+    st.radio("Angle", ["DEG", "RAD"], horizontal=True, key="angle_mode")
+    state = st.session_state.state
+    st.markdown(
+        f'<div class="calc-display"><div class="meta"><span>{st.session_state.angle_mode}</span>'
+        f'<span class="history">{calc.history(state) or "&nbsp;"}</span></div>'
+        f'<div class="current">{state.current}</div></div>',
+        unsafe_allow_html=True,
+    )
+    for r, row in enumerate(ROWS):
+        cols = st.columns(8)
+        for c, (label, kind, handler) in enumerate(row):
+            cols[c].button(
+                label,
+                key=f"{kind}-{r}-{c}",
+                on_click=press,
+                args=(handler,),
+                use_container_width=True,
+            )
