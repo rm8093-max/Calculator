@@ -15,4 +15,4 @@ def test_app_adds_two_numbers():
     assert not at.exception
     for label in ("2", "+", "3", "="):
         click(at, label)
-    assert "`5`" in at.markdown[0].value
+    assert '<div class="current">5</div>' in at.markdown[1].value
